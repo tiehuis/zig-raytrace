@@ -338,10 +338,13 @@ pub fn main() -> %void {
     var image = %%Image.init(&cc.c_allocator, 512, 512);
     defer image.deinit();
 
-    var filename = if (os.args.count() > 1) {
-        os.args.at(1)
+    var args = os.args();
+    const program_name = ??args.next(&cc.c_allocator);
+
+    var filename = if (args.next(&cc.c_allocator)) |arg| {
+        %%arg
     } else {
-        %%std.io.stderr.printf("usage: {} [file]\n", os.args.at(0));
+        %%std.io.stderr.printf("usage: {} [file]\n", program_name);
         return;
     };
 
