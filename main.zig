@@ -1,7 +1,7 @@
 const std = @import("std");
-const cc = @import("c_allocator.zig");
 const math = std.math;
 const os = std.os;
+const mem = std.mem;
 const printf = std.io.stdout.printf;
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
@@ -291,21 +291,21 @@ fn writePpm(image: &const Image) -> %void {
 
 error ParseLine;
 fn readObjectListFile(filename: []const u8) -> %ArrayList(Object) {
-    var fd = %return InStream.open(filename, &cc.c_allocator);
+    var fd = %return InStream.open(filename, &mem.c_allocator);
     defer fd.close();
 
-    var buf = Buffer.initNull(&cc.c_allocator);
+    var buf = Buffer.initNull(&mem.c_allocator);
     defer buf.deinit();
 
     %return fd.readAll(&buf);
 
-    var list = ArrayList(Object).init(&cc.c_allocator);
+    var list = ArrayList(Object).init(&mem.c_allocator);
     %defer list.deinit();
 
     var lines = std.mem.split(buf.toSliceConst(), "\n");
     while (lines.next()) |line| {
         // line isn't necessarily null-terminated so do this ourselves
-        var c_line = %return Buffer.init(&cc.c_allocator, line);
+        var c_line = %return Buffer.init(&mem.c_allocator, line);
         defer c_line.deinit();
 
         var o: Object = undefined;
@@ -335,13 +335,13 @@ error NoFileProvided;
 pub fn main() -> %void {
     // We currently stretch the view to match the image size
     // We use a square reference but should maintain an aspect ratio
-    var image = %%Image.init(&cc.c_allocator, 512, 512);
+    var image = %%Image.init(&mem.c_allocator, 512, 512);
     defer image.deinit();
 
     var args = os.args();
-    const program_name = ??args.next(&cc.c_allocator);
+    const program_name = ??args.next(&mem.c_allocator);
 
-    var filename = if (args.next(&cc.c_allocator)) |arg| {
+    var filename = if (args.next(&mem.c_allocator)) |arg| {
         %%arg
     } else {
         %%std.io.stderr.printf("usage: {} [file]\n", program_name);
