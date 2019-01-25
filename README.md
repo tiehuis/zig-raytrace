@@ -1,16 +1,12 @@
-An example raytracer in zig.
+A simple raytracer in Zig.
 
-## Dependencies
+Rewritten based on https://github.com/ssloy/tinyraytracer.
 
- - [zig](http://ziglang.org)
- - imagemagick (ppm -> png)
+# Dependencies
 
-## Installation
+ - [Zig](https://ziglang.org)
+ - imagemagick (`ppm` to `png`)
 
-```
-make
-```
+# Example
 
-## Example Output
-
-![](./img/example.png)
+![Example Output](./example.png)

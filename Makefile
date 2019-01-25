@@ -1,17 +1,16 @@
-view: out.png
-	feh out.png
-
-raytrace: main.zig
-	zig build
-
-out.ppm: raytrace objects.list
-	./raytrace objects.list > out.ppm
-
 out.png: out.ppm
 	convert out.ppm out.png
 
-clean:
-	rm -f raytrace out.ppm out.png
-	rm -rf zig-cache
+out.ppm: raytrace
+	./raytrace > out.ppm
 
-.PHONY: view clean
+raytrace: raytrace.zig
+	zig build-exe raytrace.zig --release-fast
+
+time: raytrace
+	time ./raytrace > /dev/null
+
+clean:
+	rm -rf zig-cache raytrace out.ppm out.png
+
+.PHONY: clean all
