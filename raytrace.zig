@@ -1,3 +1,5 @@
+// Based on https://github.com/ssloy/tinyraytracer.
+
 const std = @import("std");
 
 const multithread = true;
