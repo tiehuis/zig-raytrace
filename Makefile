@@ -1,16 +1,13 @@
-out.png: out.ppm
-	convert out.ppm out.png
+out.jpg: raytrace
+	./raytrace
 
-out.ppm: raytrace
-	./raytrace > out.ppm
-
-raytrace: raytrace.zig
+raytrace: raytrace.zig jpeg_writer.zig
 	zig build-exe raytrace.zig --release-fast
 
 time: raytrace
-	time ./raytrace > /dev/null
+	time ./raytrace
 
 clean:
-	rm -rf zig-cache raytrace out.ppm out.png
+	rm -rf zig-cache raytrace out.jpg
 
 .PHONY: clean all

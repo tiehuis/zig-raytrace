@@ -1,8 +1,15 @@
 // Based on https://github.com/ssloy/tinyraytracer.
 
 const std = @import("std");
+const jpeg = @import("jpeg_writer.zig");
 
-const multithread = true;
+const multi_threaded = true;
+
+const width = 1024;
+const height = 768;
+const fov: f32 = std.math.pi / 3.0;
+const out_filename = "out.jpg";
+const out_quality = 100;
 
 fn vec3(x: f32, y: f32, z: f32) Vec3f {
     return Vec3f{ .x = x, .y = y, .z = z };
@@ -197,34 +204,13 @@ fn castRay(origin: Vec3f, direction: Vec3f, spheres: []const Sphere, lights: []c
     return p1.add(p2.add(p3.add(p4)));
 }
 
-const width = 1024;
-const height = 768;
-const fov: f32 = std.math.pi / 3.0;
-
 const RenderContext = struct {
-    framebuffer: []Vec3f,
+    pixmap: []u8,
     start: usize,
     end: usize,
     spheres: []const Sphere,
     lights: []const Light,
 };
-
-fn outputFramebufferPpm(framebuffer: []Vec3f) !void {
-    var stdout_file = try std.io.getStdOut();
-    const stdout = &stdout_file.outStream().stream;
-    try stdout.print("P6\n{} {}\n255\n", @intCast(usize, width), @intCast(usize, height));
-
-    var i: usize = 0;
-    for (framebuffer) |*c| {
-        var max = std.math.max(c.x, std.math.max(c.y, c.z));
-        if (max > 1) c.* = c.mulScalar(1 / max);
-
-        const T = @typeInfo(Vec3f).Struct;
-        inline for (T.fields) |field| {
-            try stdout.print("{c}", @floatToInt(u8, 255 * std.math.max(0, std.math.min(1, @field(c, field.name)))));
-        }
-    }
-}
 
 fn renderFramebufferSegment(context: RenderContext) void {
     var j: usize = context.start;
@@ -235,15 +221,24 @@ fn renderFramebufferSegment(context: RenderContext) void {
             const y = -(2 * (@intToFloat(f32, j) + 0.5) / height - 1) * std.math.tan(fov / 2.0);
 
             const direction = vec3(x, y, -1).normalize();
-            context.framebuffer[i + j * width] = castRay(vec3(0, 0, 0), direction, context.spheres, context.lights, 0);
+            var c = castRay(vec3(0, 0, 0), direction, context.spheres, context.lights, 0);
+
+            var max = std.math.max(c.x, std.math.max(c.y, c.z));
+            if (max > 1) c = c.mulScalar(1 / max);
+
+            const T = @typeInfo(Vec3f).Struct;
+            inline for (T.fields) |field, k| {
+                const pixel = @floatToInt(u8, 255 * std.math.max(0, std.math.min(1, @field(c, field.name))));
+                context.pixmap[3 * (i + j * width) + k] = pixel;
+            }
         }
     }
 }
 
 fn renderMulti(allocator: *std.mem.Allocator, spheres: []const Sphere, lights: []const Light) !void {
-    var framebuffer = std.ArrayList(Vec3f).init(allocator);
-    defer framebuffer.deinit();
-    try framebuffer.resize(width * height);
+    var pixmap = std.ArrayList(u8).init(allocator);
+    defer pixmap.deinit();
+    try pixmap.resize(3 * width * height);
 
     const cpu_count = try std.os.cpuCount(allocator);
     const batch_size = height / cpu_count;
@@ -254,7 +249,7 @@ fn renderMulti(allocator: *std.mem.Allocator, spheres: []const Sphere, lights: [
     var j: usize = 0;
     while (j < height) : (j += batch_size) {
         const context = RenderContext{
-            .framebuffer = framebuffer.toSlice(),
+            .pixmap = pixmap.toSlice(),
             .start = j,
             .end = j + batch_size,
             .spheres = spheres,
@@ -268,13 +263,13 @@ fn renderMulti(allocator: *std.mem.Allocator, spheres: []const Sphere, lights: [
         thread.wait();
     }
 
-    try outputFramebufferPpm(framebuffer.toSlice());
+    try jpeg.writeToFile(out_filename, width, height, 3, pixmap.toSliceConst(), out_quality);
 }
 
 fn render(allocator: *std.mem.Allocator, spheres: []const Sphere, lights: []const Light) !void {
-    var framebuffer = std.ArrayList(Vec3f).init(allocator);
-    defer framebuffer.deinit();
-    try framebuffer.resize(width * height);
+    var pixmap = std.ArrayList(u8).init(allocator);
+    defer pixmap.deinit();
+    try pixmap.resize(3 * width * height);
 
     var j: usize = 0;
     while (j < height) : (j += 1) {
@@ -284,11 +279,20 @@ fn render(allocator: *std.mem.Allocator, spheres: []const Sphere, lights: []cons
             const y = -(2 * (@intToFloat(f32, j) + 0.5) / height - 1) * std.math.tan(fov / 2.0);
 
             const direction = vec3(x, y, -1).normalize();
-            framebuffer.set(i + j * width, castRay(vec3(0, 0, 0), direction, spheres, lights, 0));
+            var c = castRay(vec3(0, 0, 0), direction, spheres, lights, 0);
+
+            var max = std.math.max(c.x, std.math.max(c.y, c.z));
+            if (max > 1) c = c.mulScalar(1 / max);
+
+            const T = @typeInfo(Vec3f).Struct;
+            inline for (T.fields) |field, k| {
+                const pixel = @floatToInt(u8, 255 * std.math.max(0, std.math.min(1, @field(c, field.name))));
+                pixmap.set(3 * (i + j * width) + k, pixel);
+            }
         }
     }
 
-    try outputFramebufferPpm(framebuffer.toSlice());
+    try jpeg.writeToFile(out_filename, width, height, 3, pixmap.toSliceConst(), out_quality);
 }
 
 pub fn main() !void {
@@ -359,7 +363,7 @@ pub fn main() !void {
     };
 
     var direct = std.heap.DirectAllocator.init();
-    if (multithread) {
+    if (multi_threaded) {
         try renderMulti(&direct.allocator, spheres, lights);
     } else {
         try render(&direct.allocator, spheres, lights);
