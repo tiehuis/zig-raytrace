@@ -240,10 +240,10 @@ fn renderMulti(allocator: *std.mem.Allocator, spheres: []const Sphere, lights: [
     defer pixmap.deinit();
     try pixmap.resize(3 * width * height);
 
-    const cpu_count = try std.os.cpuCount(allocator);
+    const cpu_count = try std.Thread.cpuCount();
     const batch_size = height / cpu_count;
 
-    var threads = std.ArrayList(*std.os.Thread).init(allocator);
+    var threads = std.ArrayList(*std.Thread).init(allocator);
     defer threads.deinit();
 
     var j: usize = 0;
@@ -256,7 +256,7 @@ fn renderMulti(allocator: *std.mem.Allocator, spheres: []const Sphere, lights: [
             .lights = lights,
         };
 
-        try threads.append(try std.os.spawnThread(context, renderFramebufferSegment));
+        try threads.append(try std.Thread.spawn(context, renderFramebufferSegment));
     }
 
     for (threads.toSliceConst()) |thread| {

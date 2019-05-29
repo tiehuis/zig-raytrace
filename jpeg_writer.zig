@@ -12,11 +12,11 @@ pub fn writeToStream(writer: var, w: usize, h: usize, comp: usize, data: []const
 }
 
 pub fn writeToFile(filename: []const u8, w: usize, h: usize, comp: usize, data: []const u8, quality: i32) !void {
-    var file = try std.os.File.openWrite(filename);
+    var file = try std.fs.File.openWrite(filename);
     defer file.close();
 
     var file_stream = file.outStream();
-    var buffered_writer = std.io.BufferedOutStream(std.os.File.WriteError).init(&file_stream.stream);
+    var buffered_writer = std.io.BufferedOutStream(std.fs.File.WriteError).init(&file_stream.stream);
     try writeToStream(&buffered_writer.stream, w, h, comp, data, quality);
     try buffered_writer.flush();
 }
