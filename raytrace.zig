@@ -77,7 +77,7 @@ const Material = struct {
     pub fn default() Material {
         return Material{
             .refractive_index = 1,
-            .albedo = []f32{ 1, 0, 0, 0 },
+            .albedo = [_]f32{ 1, 0, 0, 0 },
             .diffuse_color = vec3(0, 0, 0),
             .specular_exponent = 0,
         };
@@ -298,33 +298,33 @@ fn render(allocator: *std.mem.Allocator, spheres: []const Sphere, lights: []cons
 pub fn main() !void {
     const ivory = Material{
         .refractive_index = 1.0,
-        .albedo = []f32{ 0.6, 0.3, 0.1, 0.0 },
+        .albedo = [_]f32{ 0.6, 0.3, 0.1, 0.0 },
         .diffuse_color = vec3(0.4, 0.4, 0.3),
         .specular_exponent = 50,
     };
 
     const glass = Material{
         .refractive_index = 1.5,
-        .albedo = []f32{ 0.0, 0.5, 0.1, 0.8 },
+        .albedo = [_]f32{ 0.0, 0.5, 0.1, 0.8 },
         .diffuse_color = vec3(0.6, 0.7, 0.8),
         .specular_exponent = 125,
     };
 
     const red_rubber = Material{
         .refractive_index = 1.0,
-        .albedo = []f32{ 0.9, 0.1, 0.0, 0.0 },
+        .albedo = [_]f32{ 0.9, 0.1, 0.0, 0.0 },
         .diffuse_color = vec3(0.3, 0.1, 0.1),
         .specular_exponent = 10,
     };
 
     const mirror = Material{
         .refractive_index = 1.0,
-        .albedo = []f32{ 0.0, 10.0, 0.8, 0.0 },
+        .albedo = [_]f32{ 0.0, 10.0, 0.8, 0.0 },
         .diffuse_color = vec3(1.0, 1.0, 1.0),
         .specular_exponent = 1425,
     };
 
-    const spheres = []const Sphere{
+    const spheres = [_]Sphere{
         Sphere{
             .center = vec3(-3, 0, -16),
             .radius = 1.3,
@@ -347,7 +347,7 @@ pub fn main() !void {
         },
     };
 
-    const lights = []const Light{
+    const lights = [_]Light{
         Light{
             .position = vec3(-10, 23, 20),
             .intensity = 1.1,
